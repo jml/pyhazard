@@ -82,6 +82,34 @@ def choose_play(hand, dealt_card, myself, others):
         return None
 
 
+def play_round(users, round_url):
+    while True:
+        # Figure out whose turn it is
+        round_info = get_round_info(None, round_url)
+        print_round_info(round_info)
+        current_player_id = round_info.get('currentPlayer', None)
+        if not current_player_id:
+            return round_info['winners']
+
+        # Play as that person
+        current_player = users[current_player_id]
+        current_player_creds = _make_credentials(current_player)
+        current_player_view = get_round_info(current_player_creds, round_url)
+
+        # Figure out their hand
+        dealt_card = current_player_view['dealtCard']
+        hand = player_info(current_player_view, current_player_id)['hand']
+        others = [
+            p['id'] for p in round_info['players']
+            if p['id'] != current_player_id]
+
+        # Choose a play at random.
+        play = choose_play(dealt_card, hand, current_player_id, others)
+        print 'Playing: {}'.format(play)
+        response = play_turn(current_player_creds, round_url, play)
+        print 'Result: {}'.format(response)
+
+
 def main():
     # Register two users, 'foo' and 'bar'.
     foo = register_user(USERS_ENDPOINT, 'foo')
@@ -102,26 +130,13 @@ def main():
     join_game(bar_creds, game_url)
     while True:
         game = get_game_info(None, game_url)
+        print 'Game: {}'.format(game)
         if game['state'] != 'in-progress':
             break
         current_round_url = get_round_endpoint(game['currentRound'])
-        round_info = get_round_info(None, current_round_url)
-        print_round_info(round_info)
-        current_player_id = round_info['currentPlayer']
-        current_player = users[current_player_id]
-        current_player_creds = _make_credentials(current_player)
-        current_player_view = get_round_info(
-            current_player_creds, current_round_url)
-        dealt_card = current_player_view['dealtCard']
-        hand = player_info(current_player_view, current_player_id)['hand']
-        others = [
-            p['id'] for p in round_info['players']
-            if p['id'] != current_player_id]
-        play = choose_play(dealt_card, hand, current_player_id, others)
-        print 'Playing: {}'.format(play)
-        response = play_turn(current_player_creds, current_round_url, play)
-        print 'Result: {}'.format(response)
-        break
+        winners = play_round(users, current_round_url)
+        print 'Round over. Winners: {}'.format(winners)
+    print 'Game over. Winners: {}'.format(game['winners'])
 
 
 if __name__ == '__main__':

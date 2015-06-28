@@ -77,7 +77,8 @@ def get_round_info(credentials, round_endpoint):
 
 def play_turn(credentials, round_endpoint, play):
     # XXX: Necessary for JSON serialization. Is there a better way?
-    play = dict(play.items())
+    if play is not None:
+        play = dict(play.items())
     return pmap(
         requests.post(
             round_endpoint, auth=credentials, data=json.dumps(play)).json())
