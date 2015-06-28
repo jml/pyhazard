@@ -43,6 +43,8 @@ def get_user_info(credentials, user_info_endpoint):
 # TODO: Encode routes in functions, rather than requiring full URLs to be
 # passed in.
 
+# TODO: Double check that when we play Clown we actually find out what they've
+# got.
 
 def register_game(credentials, game_endpoint, num_players, turn_timeout=3600):
     data = {'numPlayers': num_players, 'turnTimeout': turn_timeout}
@@ -71,3 +73,11 @@ def get_round_info(credentials, round_endpoint):
             round_endpoint, auth=credentials,
             headers={'Accept': 'application/json'},
         ).json())
+
+
+def play_turn(credentials, round_endpoint, play):
+    # XXX: Necessary for JSON serialization. Is there a better way?
+    play = dict(play.items())
+    return pmap(
+        requests.post(
+            round_endpoint, auth=credentials, data=json.dumps(play)).json())

@@ -16,8 +16,11 @@
 Simple example client
 """
 
-# TODO: Export from public name.
+import random
+
+# TODO: Export from public names.
 from hazard._client import *
+from hazard._rules import iter_valid_plays
 from hazard._client import _make_credentials
 
 
@@ -71,9 +74,12 @@ def print_round_info(round_info):
     print
 
 
-def choose_play(hand, dealt_card):
-    print 'choosing play: {}, {}'.format(hand, dealt_card)
-    return hand
+def choose_play(hand, dealt_card, myself, others):
+    valid_plays = list(iter_valid_plays(hand, dealt_card, myself, others))
+    try:
+        return random.choice(valid_plays)
+    except IndexError:
+        return None
 
 
 def main():
@@ -98,17 +104,23 @@ def main():
         game = get_game_info(None, game_url)
         if game['state'] != 'in-progress':
             break
-        current_round = get_round_endpoint(game['currentRound'])
-        round_info = get_round_info(None, current_round)
+        current_round_url = get_round_endpoint(game['currentRound'])
+        round_info = get_round_info(None, current_round_url)
         print_round_info(round_info)
         current_player_id = round_info['currentPlayer']
         current_player = users[current_player_id]
+        current_player_creds = _make_credentials(current_player)
         current_player_view = get_round_info(
-            _make_credentials(current_player), current_round)
+            current_player_creds, current_round_url)
         dealt_card = current_player_view['dealtCard']
         hand = player_info(current_player_view, current_player_id)['hand']
-        play = choose_play(dealt_card, hand)
-        print play
+        others = [
+            p['id'] for p in round_info['players']
+            if p['id'] != current_player_id]
+        play = choose_play(dealt_card, hand, current_player_id, others)
+        print 'Playing: {}'.format(play)
+        response = play_turn(current_player_creds, current_round_url, play)
+        print 'Result: {}'.format(response)
         break
 
 
