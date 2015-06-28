@@ -17,9 +17,17 @@ Simple example client
 """
 
 import random
+from pyrsistent import pmap
 
 # TODO: Export from public names.
-from hazard._client import *
+from hazard._client import (
+    get_game_info,
+    get_round_info,
+    join_game,
+    play_turn,
+    register_game,
+    register_user,
+)
 from hazard._rules import iter_valid_plays
 from hazard._client import _make_credentials
 
